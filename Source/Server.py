@@ -33,14 +33,14 @@ class PokerServer:
         try:
             while True:
                 client_socket, address = server_socket.accept()
-                client_thread = threading.Thread(target=self.handle_client_sign_in, args=(client_socket,))
+                client_thread = threading.Thread(target=self.handle_client, args=(client_socket,))
                 client_thread.start()
         except KeyboardInterrupt:
             print("Server shutting down.")
         finally:
             server_socket.close()
 
-    def handle_client_sign_in(self, client_socket):
+    def handle_client(self, client_socket):
         # Handle a new client connection
 
         try:
@@ -63,9 +63,14 @@ class PokerServer:
                                                              "message": "User with this name already exists"}))
                     case MessageType.GetLobbies:
                         client_socket.send(pickle.dumps({"lobbies": self.tables}))
-
-
-                print(f"Sending message to user")
+                    case MessageType.Join:
+                        pass
+                    case MessageType.Create:
+                        pass
+                    case MessageType.Quit:
+                        break
+                    case _:
+                        pass
 
         except Exception as e:
             print(f"Error handling client: {e}")

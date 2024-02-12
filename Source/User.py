@@ -6,5 +6,3 @@ class User:
         self.password = password
         self.balance = 1000
 
-        # self.history = []
-
