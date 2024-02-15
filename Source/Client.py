@@ -1,7 +1,13 @@
 import socket
 import pickle  # For serializing Python objects for network communication
+import pygame
 
 from Source.MessageType import MessageType
+
+SCREEN_WIDTH = 1300
+SCREEN_HEIGHT = 900
+
+BACKGROUND_IMG = pygame.image.load('../img/pokerBG2.jpg')
 
 
 class PokerClient:
@@ -13,6 +19,23 @@ class PokerClient:
         self.server_port = server_port
         self.player_name = None
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+
+    def menu(self):
+        pygame.init()
+
+        # self.screen.blit(BACKGROUND_IMG, [0, 0])   # Background image
+        self.screen.fill((1, 50, 32)) # Temporary background
+
+        run = True
+        while run:
+            pygame.draw.rect(self.screen, (255, 0, 0), pygame.Rect((50, 50, 50, 50)))
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    run = False
+
+            pygame.display.update()
 
     def connect_to_server(self):
         self.client_socket.connect((self.server_host, self.server_port))
@@ -86,6 +109,7 @@ if __name__ == "__main__":
 
         # Get the table_id and player_name from the user and try to login or register
 
+        '''
         print("login or register")
 
         command = input()
@@ -100,10 +124,10 @@ if __name__ == "__main__":
 
         if poker_client.logged_in:
             poker_client.load_lobbies()
-
+        '''
 
         # Implement the game loop or user interface here
-        poker_client.play_game()
+        poker_client.menu()
 
     except KeyboardInterrupt:
         print("Client shutting down.")
