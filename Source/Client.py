@@ -25,6 +25,8 @@ LOGIN_BUTTON_IMG = pygame.image.load('../img/button_login.png')
 REGISTER_BUTTON_IMG = pygame.image.load('../img/button_register.png')
 GO_BACK_BUTTON_IMG = pygame.image.load('../img/button_go-back.png')
 CREATE_NEW_TABLE_IMG = pygame.image.load('../img/button_create-new-table.png')
+REFRESH_TABLES_IMG = pygame.image.load('../img/button_refresh-tables.png')
+
 
 class PokerClient:
     def __init__(self, server_host, server_port):
@@ -223,6 +225,7 @@ class PokerClient:
         self.load_lobbies()
 
         create_table_button = Button(CREATE_NEW_TABLE_IMG, 650, 800, 391, 66)
+        refresh_button = Button(REFRESH_TABLES_IMG, 650, 730, 391, 66)
         current_position = 0
 
         run = True
@@ -230,6 +233,7 @@ class PokerClient:
             self.screen.fill(BACKGROUND_COLOR)  # Temporary background
             self.draw_text("Poker with friends", FONT, TEXT_COLOUR, 500, 150)
             self.screen.blit(create_table_button.image, (create_table_button.x, create_table_button.y))
+            self.screen.blit(refresh_button.image, (refresh_button.x, refresh_button.y))
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -243,7 +247,10 @@ class PokerClient:
                 elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                     if create_table_button.check_if_clicked(pygame.mouse.get_pos()):
                         print("Trying to create new table")
-                        # Add creating table menu
+                        self.create_table()
+                    if refresh_button.check_if_clicked(pygame.mouse.get_pos()):
+                        print("Refreshing tables")
+                        self.load_lobbies()
 
             for i in range(current_position, current_position + 5):
                 if i >= len(self.tables):
@@ -268,8 +275,13 @@ class PokerClient:
         return pickle.loads(serialized_message)
 
     def play_game(self):
-        # Implement game logic, user input, and communication with the server
-        pass
+        self.screen.fill((1, 50, 32))
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+            pygame.display.update()
 
     def login(self, username, password):
         self.send_message({"action": MessageType.Login, "username": username, "password": password})
@@ -277,6 +289,7 @@ class PokerClient:
         response = self.receive_message()
         if response['action'] == MessageType.Login and response['status'] == 'successful':
             print(f"You are loggen in as {username}")
+            self.username = username
             self.logged_in = True
             return True
         else:
@@ -290,6 +303,7 @@ class PokerClient:
         print(response)
         if response['action'] == MessageType.Register and response['status'] == 'successful':
             print(f"You are registered in as {username}")
+            self.username = username
             self.logged_in = True
             return True
         else:
@@ -305,6 +319,20 @@ class PokerClient:
         response = self.receive_message()
         print(response)
         self.tables = response['lobbies']
+
+    def create_table(self):
+        # send message to server to create table and add user to it
+        self.send_message({"action": MessageType.Create, 'username': self.username})
+        response = self.receive_message()
+        if response['action'] == MessageType.Create and response['status'] == 'successful':
+            print(f"Created and joined table")
+            self.play_game()
+            # Do something else
+
+            return True
+        else:
+            print("Login was unsuccessful.")
+            return False
 
 
 class Button:

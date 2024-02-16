@@ -17,14 +17,6 @@ class PokerServer:
         self.port = port
         self.playing_tables = []
         self.waiting_tables = []  # Dictionary to store PokerTable instances
-        self.waiting_tables.append(PokerTable('Table 1'))
-        self.waiting_tables.append(PokerTable('Table 2'))
-        self.waiting_tables.append(PokerTable('Table 3'))
-        self.waiting_tables.append(PokerTable('Table 4'))
-        self.waiting_tables.append(PokerTable('Table 5'))
-        self.waiting_tables.append(PokerTable('Table 6'))
-        self.waiting_tables.append(PokerTable('Table 7'))
-        self.waiting_tables.append(PokerTable('Table 8'))
         # self.accounts = self.load_players()
         # self.connected_users = {}
         self.accountHandler = AccountHandler(ACCOUNTS_FILE)
@@ -75,7 +67,11 @@ class PokerServer:
                     case MessageType.Join:
                         pass
                     case MessageType.Create:
-                        pass
+                        poker_table = PokerTable(message['username'])
+                        poker_table.players.append(message['username'])
+                        self.waiting_tables.append(poker_table)
+                        client_socket.send(pickle.dumps({"action": MessageType.Create, "status": "successful"}))
+                        print("Created new table")
                     case MessageType.Quit:
                         break
                     case _:
