@@ -245,12 +245,20 @@ class PokerClient:
                     current_position = max(0, current_position + event.y)
                     current_position = min(current_position, len(self.tables) - 1)
                 elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                    if create_table_button.check_if_clicked(pygame.mouse.get_pos()):
+                    mouse_cords = pygame.mouse.get_pos()
+                    if create_table_button.check_if_clicked(mouse_cords):
                         print("Trying to create new table")
                         self.create_table()
-                    if refresh_button.check_if_clicked(pygame.mouse.get_pos()):
+                    if refresh_button.check_if_clicked(mouse_cords):
                         print("Refreshing tables")
                         self.load_lobbies()
+                    if 50 < mouse_cords[0] < 350 and 250 < mouse_cords[1] < 450:
+                        # Pick clicked lobby
+                        clickedY = mouse_cords[1] - 250
+                        index = clickedY // 35
+                        if index < len(self.tables):
+                            self.join_table(current_position + index)
+                            # print(f"Clicked table index is {current_position + index}")
 
             for i in range(current_position, current_position + 5):
                 if i >= len(self.tables):
@@ -327,6 +335,18 @@ class PokerClient:
         response = self.receive_message()
         if response['action'] == MessageType.Create and response['status'] == 'successful':
             print(f"Created and joined table")
+            self.play_game()
+            # Do something else
+            return True
+        else:
+            print("Creating table was unsuccessful.")
+            return False
+
+    def join_table(self, index):
+        self.send_message({"action": MessageType.Join, 'table_name': self.tables[index].table_name, 'username': self.username})
+        response = self.receive_message()
+        if response['action'] == MessageType.Join and response['status'] == 'successful':
+            print(f"Joined table")
             self.play_game()
             # Do something else
 
