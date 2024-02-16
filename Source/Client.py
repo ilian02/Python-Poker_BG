@@ -248,7 +248,8 @@ class PokerClient:
             for i in range(current_position, current_position + 5):
                 if i >= len(self.tables):
                     break
-                self.draw_text(f"{self.tables[i].table_name} - table name", FONT_LOBBIES, (255, 255, 255), 50,
+                text = ''.join([' ' + name for name in self.tables[i].players])
+                self.draw_text(f"{self.tables[i].table_name} - {text}", FONT_LOBBIES, (255, 255, 255), 50,
                                250 + (i - current_position) * 35)
 
             pygame.display.update()
