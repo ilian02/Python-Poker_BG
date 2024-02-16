@@ -73,6 +73,7 @@ class PokerServer:
                         client_socket.send(pickle.dumps({"action": MessageType.Create, "status": "successful"}))
                         print("Created new table")
                     case MessageType.Quit:
+                        self.delete_table_if_owner(message['username'])
                         break
                     case _:
                         pass
@@ -81,6 +82,12 @@ class PokerServer:
             print(f"Error handling client: {e}")
         finally:
             client_socket.close()
+
+    def delete_table_if_owner(self, username):
+        table_name = username + "'s table"
+        for table in self.waiting_tables:
+            if table.table_name == table_name:
+                self.waiting_tables.remove(table)
 
 
 if __name__ == "__main__":

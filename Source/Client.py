@@ -279,6 +279,7 @@ class PokerClient:
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
+                    self.send_message({"action": MessageType.Quit, 'username': self.username})
                     pygame.quit()
                     sys.exit()
             pygame.display.update()
