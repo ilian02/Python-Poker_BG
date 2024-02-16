@@ -15,7 +15,16 @@ class PokerServer:
     def __init__(self, host, port):
         self.host = host
         self.port = port
-        self.tables = {}  # Dictionary to store PokerTable instances
+        self.playing_tables = []
+        self.waiting_tables = []  # Dictionary to store PokerTable instances
+        self.waiting_tables.append(PokerTable('Table 1'))
+        self.waiting_tables.append(PokerTable('Table 2'))
+        self.waiting_tables.append(PokerTable('Table 3'))
+        self.waiting_tables.append(PokerTable('Table 4'))
+        self.waiting_tables.append(PokerTable('Table 5'))
+        self.waiting_tables.append(PokerTable('Table 6'))
+        self.waiting_tables.append(PokerTable('Table 7'))
+        self.waiting_tables.append(PokerTable('Table 8'))
         # self.accounts = self.load_players()
         # self.connected_users = {}
         self.accountHandler = AccountHandler(ACCOUNTS_FILE)
@@ -62,7 +71,7 @@ class PokerServer:
                             client_socket.send(pickle.dumps({"action": MessageType.Register, "status": "unsuccessful",
                                                              "message": "User with this name already exists"}))
                     case MessageType.GetLobbies:
-                        client_socket.send(pickle.dumps({"lobbies": self.tables}))
+                        client_socket.send(pickle.dumps({"lobbies": self.waiting_tables}))
                     case MessageType.Join:
                         pass
                     case MessageType.Create:
@@ -84,6 +93,5 @@ if __name__ == "__main__":
     SERVER_PORT = 5555
 
     poker_server = PokerServer(SERVER_HOST, SERVER_PORT)
-    poker_server.tables[0] = PokerTable('METABLE', 123)
 
     poker_server.start()

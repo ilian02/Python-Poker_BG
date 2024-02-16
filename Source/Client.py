@@ -14,22 +14,27 @@ pygame.display.set_caption("Poker with friends")
 
 BACKGROUND_IMG = pygame.image.load('../img/pokerBG2.jpg')
 FONT = pygame.font.Font(None, 48)
+FONT_LOBBIES = pygame.font.Font(None, 35)
 TEXT_COLOUR = (255, 255, 255)
 BACKGROUND_COLOR = (1, 50, 32)
+
+active_color = (255, 255, 255)
+inactive_color = (160, 160, 160)
 
 LOGIN_BUTTON_IMG = pygame.image.load('../img/button_login.png')
 REGISTER_BUTTON_IMG = pygame.image.load('../img/button_register.png')
 GO_BACK_BUTTON_IMG = pygame.image.load('../img/button_go-back.png')
-
+CREATE_NEW_TABLE_IMG = pygame.image.load('../img/button_create-new-table.png')
 
 class PokerClient:
     def __init__(self, server_host, server_port):
+        self.tables = []
         self.logged_in = False
         self.table_name = None
-        self.player_password = None
+        self.username = None
+        self.password = None
         self.server_host = server_host
         self.server_port = server_port
-        self.player_name = None
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
@@ -88,12 +93,13 @@ class PokerClient:
                         print(f"Registering with {username} and {password}")
                         if self.register(username, password):
                             # registered corectly
+                            self.lobby_menu()
                             pass
                         else:
                             invalid_message = True
 
                 elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_SPACE:
+                    if event.key == pygame.K_TAB:
                         if active_input == 'username':
                             active_input = 'password'
                         else:
@@ -119,14 +125,22 @@ class PokerClient:
             self.screen.blit(back_button.image, (back_button.x, back_button.y))
             self.screen.blit(login_button.image, (login_button.x, login_button.y))
 
+            if active_input == 'username':
+                username_text_color = active_color
+                password_text_color = inactive_color
+            else:
+                username_text_color = inactive_color
+                password_text_color = active_color
 
             # Render username input field
-            username_text = pygame.font.Font(None, 38).render("Username: " + username, True, (255, 255, 255))
+            username_text = pygame.font.Font(None, 38).render("Username: " + username,
+                                                              True, username_text_color)
             username_rect = username_text.get_rect(center=(350, 450))
             self.screen.blit(username_text, username_rect)
 
             # Render password input field
-            password_text = pygame.font.Font(None, 38).render("Password: " + "*" * len(password), True, (255, 255, 255))
+            password_text = pygame.font.Font(None, 38).render("Password: " + "*" * len(password),
+                                                              True, password_text_color)
             password_rect = password_text.get_rect(center=(350, 550))
             self.screen.blit(password_text, password_rect)
 
@@ -155,12 +169,12 @@ class PokerClient:
                         print(f"Logging with {username} and {password}")
                         if self.login(username, password):
                             # logged in correctly
-
+                            self.lobby_menu()
                             pass
                         else:
                             invalid_message = True
                 elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_SPACE:
+                    if event.key == pygame.K_TAB:
                         if active_input == 'username':
                             active_input = 'password'
                         else:
@@ -184,15 +198,58 @@ class PokerClient:
             self.screen.blit(back_button.image, (back_button.x, back_button.y))
             self.screen.blit(login_button.image, (login_button.x, login_button.y))
 
+            if active_input == 'username':
+                username_text_color = active_color
+                password_text_color = inactive_color
+            else:
+                username_text_color = inactive_color
+                password_text_color = active_color
+
             # Render username input field
-            username_text = pygame.font.Font(None, 38).render("Username: " + username, True, (255, 255, 255))
+            username_text = pygame.font.Font(None, 38).render("Username: " + username,
+                                                              True, username_text_color)
             username_rect = username_text.get_rect(center=(350, 450))
             self.screen.blit(username_text, username_rect)
 
             # Render password input field
-            password_text = pygame.font.Font(None, 38).render("Password: " + "*" * len(password), True, (255, 255, 255))
+            password_text = pygame.font.Font(None, 38).render("Password: " + "*" * len(password),
+                                                              True, password_text_color)
             password_rect = password_text.get_rect(center=(350, 550))
             self.screen.blit(password_text, password_rect)
+
+            pygame.display.update()
+
+    def lobby_menu(self):
+        self.load_lobbies()
+
+        create_table_button = Button(CREATE_NEW_TABLE_IMG, 650, 800, 391, 66)
+        current_position = 0
+
+        run = True
+        while run:
+            self.screen.fill(BACKGROUND_COLOR)  # Temporary background
+            self.draw_text("Poker with friends", FONT, TEXT_COLOUR, 500, 150)
+            self.screen.blit(create_table_button.image, (create_table_button.x, create_table_button.y))
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                elif (event.type == pygame.MOUSEWHEEL
+                      and 50 < pygame.mouse.get_pos()[0] < 350
+                      and 250 < pygame.mouse.get_pos()[1] < 450):
+                    current_position = max(0, current_position + event.y)
+                    current_position = min(current_position, len(self.tables) - 1)
+                elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    if create_table_button.check_if_clicked(pygame.mouse.get_pos()):
+                        print("Trying to create new table")
+                        # Add creating table menu
+
+            for i in range(current_position, current_position + 5):
+                if i >= len(self.tables):
+                    break
+                self.draw_text(f"{self.tables[i].table_name} - table name", FONT_LOBBIES, (255, 255, 255), 50,
+                               250 + (i - current_position) * 35)
 
             pygame.display.update()
 
@@ -246,6 +303,7 @@ class PokerClient:
 
         response = self.receive_message()
         print(response)
+        self.tables = response['lobbies']
 
 
 class Button:
