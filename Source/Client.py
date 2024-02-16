@@ -72,6 +72,7 @@ class PokerClient:
         self.screen.fill((1, 50, 32))
         login_button = Button(REGISTER_BUTTON_IMG, 250, 600, 268, 66)
         back_button = Button(GO_BACK_BUTTON_IMG, 250, 300, 268, 66)
+        invalid_message = False
 
         while True:
 
@@ -85,6 +86,12 @@ class PokerClient:
                         self.menu()
                     if login_button.check_if_clicked(pygame.mouse.get_pos()):
                         print(f"Registering with {username} and {password}")
+                        if self.register(username, password):
+                            # registered corectly
+                            pass
+                        else:
+                            invalid_message = True
+
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_SPACE:
                         if active_input == 'username':
@@ -106,8 +113,12 @@ class PokerClient:
 
             self.draw_text("Register", FONT, TEXT_COLOUR, 450, 150)
 
+            if invalid_message:
+                self.draw_text("Name already exists", FONT, TEXT_COLOUR, 450, 800)
+
             self.screen.blit(back_button.image, (back_button.x, back_button.y))
             self.screen.blit(login_button.image, (login_button.x, login_button.y))
+
 
             # Render username input field
             username_text = pygame.font.Font(None, 38).render("Username: " + username, True, (255, 255, 255))
@@ -121,7 +132,6 @@ class PokerClient:
 
             pygame.display.update()
 
-
     def login_page(self):
         username = ""
         password = ""
@@ -129,6 +139,7 @@ class PokerClient:
         self.screen.fill((1, 50, 32))
         login_button = Button(LOGIN_BUTTON_IMG, 250, 600, 268, 66)
         back_button = Button(GO_BACK_BUTTON_IMG, 250, 300, 268, 66)
+        invalid_message = False
 
         while True:
 
@@ -142,6 +153,12 @@ class PokerClient:
                         self.menu()
                     if login_button.check_if_clicked(pygame.mouse.get_pos()):
                         print(f"Logging with {username} and {password}")
+                        if self.login(username, password):
+                            # logged in correctly
+
+                            pass
+                        else:
+                            invalid_message = True
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_SPACE:
                         if active_input == 'username':
@@ -161,8 +178,9 @@ class PokerClient:
 
             self.screen.fill((1, 50, 32))
 
-            self.draw_text("Login", FONT, TEXT_COLOUR, 450, 150)
-
+            self.draw_text("Log-in page", FONT, TEXT_COLOUR, 450, 150)
+            if invalid_message:
+                self.draw_text("Invalid login info", FONT, TEXT_COLOUR, 450, 800)
             self.screen.blit(back_button.image, (back_button.x, back_button.y))
             self.screen.blit(login_button.image, (login_button.x, login_button.y))
 
@@ -195,37 +213,30 @@ class PokerClient:
         # Implement game logic, user input, and communication with the server
         pass
 
-    def login(self):
-        self._get_profile_info_and_send_message(MessageType.Login)
+    def login(self, username, password):
+        self.send_message({"action": MessageType.Login, "username": username, "password": password})
 
         response = self.receive_message()
         if response['action'] == MessageType.Login and response['status'] == 'successful':
-            print(f"You are loggen in as {self.player_name}")
+            print(f"You are loggen in as {username}")
             self.logged_in = True
             return True
         else:
             print("Login was unsuccessful.")
             return False
 
-    def register(self):
-        self._get_profile_info_and_send_message(MessageType.Register)
+    def register(self, username, password):
+        self.send_message({"action": MessageType.Register, "username": username, "password": password})
 
         response = self.receive_message()
         print(response)
         if response['action'] == MessageType.Register and response['status'] == 'successful':
-            print(f"You are registered in as {self.player_name}")
+            print(f"You are registered in as {username}")
             self.logged_in = True
             return True
         else:
             print("Register was unsuccessful.")
             return False
-
-    def _get_profile_info_and_send_message(self, action):
-        self.player_name = input("Enter your name: ")
-        self.player_password = input("Enter your password: ")
-
-        # Join the poker table
-        self.send_message({"action": action, "username": self.player_name, "password": self.player_password})
 
     def close_connection(self):
         self.client_socket.close()
