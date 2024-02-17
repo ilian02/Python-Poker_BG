@@ -100,6 +100,7 @@ class PokerServer:
 
                     case MessageType.Quit:
                         self.delete_table_if_owner_quits(message['username'])
+                        self.accountHandler.disconnect_user(message['username'])
                         break
 
                     case MessageType.RefreshTableForOne:
@@ -150,6 +151,8 @@ class PokerServer:
                 client_socket.send(pickle.dumps({"action": MessageType.RefreshTableForOne, 'table': table}))
 
     def start_poker_game(self, poker_table, player_sockets):
+        self.waiting_tables.remove(poker_table)
+
         for player in player_sockets:
             player_sockets[player].send(pickle.dumps({'action': MessageType.StartTable}))
             # print(f'sent start message to player {player}')

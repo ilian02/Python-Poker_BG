@@ -10,7 +10,7 @@ from Source.CardDeck import CardDeck
 from Source.MessageType import MessageType
 from Source.PokerTable import PokerTable
 
-SCREEN_WIDTH = 1300
+SCREEN_WIDTH = 1100
 SCREEN_HEIGHT = 700
 
 pygame.init()
@@ -31,7 +31,7 @@ GO_BACK_BUTTON_IMG = pygame.image.load('../img/button_go-back.png')
 CREATE_NEW_TABLE_IMG = pygame.image.load('../img/button_create-new-table.png')
 REFRESH_TABLES_IMG = pygame.image.load('../img/button_refresh-tables.png')
 START_GAME_IMG = pygame.image.load('../img/button_start-game.png')
-
+CARD_BACK_IMAGE = pygame.image.load('../img/cards/back.png')
 
 class PokerClient:
     """Client Thread that takes care of the client GUI and input"""
@@ -311,6 +311,21 @@ class PokerClient:
             self.screen.fill((1, 50, 32))
             self.screen.blit(all_cards_img[first_card], (500, 500))
             self.screen.blit(all_cards_img[second_card], (570, 500))
+
+            for i in range(self.current_table.cards_shown, 5):
+                self.screen.blit(CARD_BACK_IMAGE, (250+100*i, 250))
+
+            self.screen.blit(CARD_BACK_IMAGE, (50, 350))
+            self.screen.blit(CARD_BACK_IMAGE, (120, 350))
+
+            if len(self.current_table.players) > 2:
+                self.screen.blit(CARD_BACK_IMAGE, (350, 50))
+                self.screen.blit(CARD_BACK_IMAGE, (420, 50))
+
+            if len(self.current_table.players) > 3:
+                self.screen.blit(CARD_BACK_IMAGE, (850, 350))
+                self.screen.blit(CARD_BACK_IMAGE, (920, 350))
+
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:

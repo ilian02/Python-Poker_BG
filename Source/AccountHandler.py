@@ -5,7 +5,7 @@ import pickle
 class AccountHandler:
     """Manages actions with accounts, tracks logged-in users"""
     def __init__(self, file_db):
-        self.logged_in_users = []
+        # self.logged_in_users = []
         self.file_db = file_db
         self.user_db = self.load_users()
         self.connected_users = {}
@@ -38,3 +38,7 @@ class AccountHandler:
         """Saves state of users in memory to the save file"""
         with open(self.file_db, "wb") as file:
             pickle.dump(self.user_db, file)
+
+    def disconnect_user(self, username):
+        if username in self.connected_users:
+            self.connected_users.pop(username)

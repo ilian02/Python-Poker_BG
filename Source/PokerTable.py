@@ -14,6 +14,7 @@ class PokerTable:
         self.player_cards = {}
         self.pot = 0
         self.starting = 25
+        self.cards_shown = 0
 
     def draw_cards(self):
 
