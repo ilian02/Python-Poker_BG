@@ -3,6 +3,7 @@ import threading
 import pickle  # For serializing Python objects for network communication
 from PokerTable import PokerTable
 from Source.AccountHandler import AccountHandler
+from Source.CardDeck import CardDeck
 from Source.MessageType import MessageType
 from Source.User import User
 
@@ -20,6 +21,7 @@ class PokerServer:
         self.waiting_tables = []  # Array to store PokerTable instances
         # self.waiting_tables.append(PokerTable('temp1'))
         self.accountHandler = AccountHandler(ACCOUNTS_FILE)
+        self.deck = CardDeck.cards_img.copy()
         # self.previous_games = self.load_previous_games()
 
     def start(self):
@@ -48,7 +50,7 @@ class PokerServer:
         try:
             # Receive client_name from the client
             while True:
-                message = pickle.loads(client_socket.recv(1024))
+                message = pickle.loads(client_socket.recv(4000))
 
                 match message['action']:
                     case MessageType.Login:
@@ -64,7 +66,8 @@ class PokerServer:
                             client_socket.send(pickle.dumps({"action": MessageType.Register, "status": "unsuccessful",
                                                              "message": "User with this name already exists"}))
                     case MessageType.GetLobbies:
-                        client_socket.send(pickle.dumps({"lobbies": self.waiting_tables}))
+                        data = pickle.dumps({"lobbies": self.waiting_tables})
+                        client_socket.send(data)
 
                     case MessageType.Join:
                         for table in self.waiting_tables:
@@ -130,6 +133,9 @@ class PokerServer:
         for table in self.waiting_tables:
             if table.table_name == table_name:
                 client_socket.send(pickle.dumps({"action": MessageType.RefreshTableForOne, 'table': table}))
+
+    def start_poker_game(self, poker_table):
+        pass
 
 
 if __name__ == "__main__":

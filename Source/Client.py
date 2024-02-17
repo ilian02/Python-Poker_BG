@@ -294,7 +294,7 @@ class PokerClient:
 
     def receive_message(self):
         # Receive a message from the server
-        serialized_message = self.client_socket.recv(1024)
+        serialized_message = self.client_socket.recv(4000)
         return pickle.loads(serialized_message)
 
     def play_game(self):
