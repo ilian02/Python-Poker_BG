@@ -36,7 +36,7 @@ CARD_BACK_IMAGE = pygame.image.load('../img/cards/back.png')
 class PokerClient:
     """Client Thread that takes care of the client GUI and input"""
     def __init__(self, server_host, server_port):
-        self.game_started = False
+        self.game_started = True
         self.run = True
         self.tables = []
         self.logged_in = False
