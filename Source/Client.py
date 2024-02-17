@@ -35,6 +35,7 @@ START_GAME_IMG = pygame.image.load('../img/button_start-game.png')
 class PokerClient:
     """Client Thread that takes care of the client GUI and input"""
     def __init__(self, server_host, server_port):
+        self.game_started = False
         self.run = True
         self.tables = []
         self.logged_in = False
@@ -299,11 +300,15 @@ class PokerClient:
 
     def play_game(self):
         self.screen.fill((1, 50, 32))
+
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.send_message({"action": MessageType.Quit, 'username': self.username})
-                    self.run = False
+                    self.close_connection()
+                    pygame.quit()
+                    sys.exit()
+
             pygame.display.update()
 
     def login(self, username, password):
@@ -401,6 +406,8 @@ class PokerClient:
                         self.refresh_table()
                     if start_button.check_if_clicked(mouse_cords):
                         print("Trying to start table")
+                        self.send_message({'action': MessageType.StartTable, 'owner_name': self.username})
+                        self.play_game()
 
             for i in range(0, len(self.current_table.players)):
                 self.draw_text(f"{self.current_table.players[i]}", FONT_LOBBIES, (255, 255, 255), 50,
@@ -427,11 +434,14 @@ class PokerClient:
                 case MessageType.RefreshTable:
                     self.current_table = response['table']
                 case MessageType.StartTable:
-                    # Define start of game
-                    pass
+                    self.run = False
+                    self.game_started = True
                 case MessageType.DeleteTable:
                     self.run = False
-                    break
+                case MessageType.Quit:
+                    self.close_connection()
+                    pygame.quit()
+                    sys.exit()
 
     def wait_for_table_to_start(self):
         """GUI for waiting for the table to start and updating connected users to table"""
@@ -453,6 +463,9 @@ class PokerClient:
                                250 + i * 35)
 
             pygame.display.update()
+
+        if self.game_started:
+            self.play_game()
 
         self.close_connection()
 

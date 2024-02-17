@@ -84,6 +84,16 @@ class PokerServer:
                         client_socket.send(pickle.dumps({"action": MessageType.Create, "status": "successful"}))
                         print("Created new table")
 
+                    case MessageType.StartTable:
+                        players_to_start = {}
+                        for table in self.waiting_tables:
+                            if table.table_name == message['owner_name'] + "'s table":
+                                for player in table.players:
+                                    players_to_start[player] = self.accountHandler.connected_users[player]
+
+                                self.start_poker_game(table, players_to_start)
+                                break
+
                     case MessageType.RefreshTable:
                         self.broadcast_table_information(message['username'])
 
@@ -134,8 +144,16 @@ class PokerServer:
             if table.table_name == table_name:
                 client_socket.send(pickle.dumps({"action": MessageType.RefreshTableForOne, 'table': table}))
 
-    def start_poker_game(self, poker_table):
-        pass
+    def start_poker_game(self, poker_table, players):
+        for player in players:
+            players[player].send(pickle.dumps({'action': MessageType.StartTable}))
+            print(f'sent start message to player {player}')
+
+    def broadcast_to_table(self, table, action, message):
+        for player_name in table.players:
+            player_socket = self.accountHandler.connected_users[player_name]
+            print(player_socket)
+            player_socket.send(pickle.dumps({'action': action, 'message': message}))
 
 
 if __name__ == "__main__":
