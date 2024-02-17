@@ -8,6 +8,7 @@ class PokerTable:
     def __init__(self, table_name):
         self.table_name = table_name + "'s table"
         self.players = []  # List to store connected players
+        self.players_money = {}
         self.chat_history = []
         self.deck = list(CardDeck.cards_img.keys())
         self.table_cards = []

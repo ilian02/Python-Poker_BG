@@ -1,6 +1,8 @@
 import socket
 import threading
 import pickle  # For serializing Python objects for network communication
+from queue import Queue
+
 from PokerTable import PokerTable
 from Source.AccountHandler import AccountHandler
 from Source.CardDeck import CardDeck
@@ -73,10 +75,11 @@ class PokerServer:
                         for table in self.waiting_tables:
                             if table.table_name == message['table_name']:
                                 table.players.append(message['username'])
+                                table.players_money[message['username']] = (
+                                    self.accountHandler.user_db[message['username']].balance)
                                 table.draw_cards()
                                 client_socket.send(pickle.dumps({"action": MessageType.Join, "status": "successful"}))
                                 break
-                        pass
 
                     case MessageType.Create:
                         poker_table = PokerTable(message['username'])
@@ -154,14 +157,45 @@ class PokerServer:
         self.waiting_tables.remove(poker_table)
 
         for player in player_sockets:
+            # EXPERIMENTAL
             player_sockets[player].send(pickle.dumps({'action': MessageType.StartTable}))
-            # print(f'sent start message to player {player}')
-            player_sockets[player].send(pickle.dumps({'action': MessageType.RefreshTable, 'table': poker_table}))
 
+        current_bid = 50
+        player_bids_till_now = {}
+        for player in poker_table.players:
+            player_bids_till_now[player] = 0
+
+        player_turns = Queue()
+        for player in poker_table.players:
+            player_turns.put(player)
+
+        first_player = player_turns.get()
+        player_bids_till_now[first_player] = current_bid / 2
+        player_turns.put(first_player)
+
+        second_player = player_turns.get()
+        player_bids_till_now[second_player] = current_bid
+        player_turns.put(second_player)
+
+        folded = []
         passed = []
-        current_player = 0
-        while len(passed) != len(player_sockets):
-            pass
+
+        while len(passed) + len(folded) != len(player_sockets):
+            current_player = player_turns.get()
+            # print(f"Sending Your turn message to {current_player} on socket { player_sockets[current_player]}")
+            player_sockets[current_player].send(pickle.dumps({'action': MessageType.YourTurn, 'current_bid': current_bid}))
+            message = pickle.loads(player_sockets[current_player].recv(1024))
+            match message['action']:
+                case MessageType.Pass:
+                    passed.append(current_player)
+                    player_turns.put(current_player)
+                    pass
+                case MessageType.Bid:
+                    player_bids_till_now[current_player] = message['bid']
+                    passed = []
+                    player_turns.put(current_player)
+                case MessageType.Fold:
+                    folded.append(current_player)
 
     def broadcast_to_table(self, table, action, message):
         for player_name in table.players:

@@ -32,10 +32,15 @@ CREATE_NEW_TABLE_IMG = pygame.image.load('../img/button_create-new-table.png')
 REFRESH_TABLES_IMG = pygame.image.load('../img/button_refresh-tables.png')
 START_GAME_IMG = pygame.image.load('../img/button_start-game.png')
 CARD_BACK_IMAGE = pygame.image.load('../img/cards/back.png')
+BID_BUTTON_IMAGE = pygame.image.load('../img/button_bid.png')
+FOLD_BUTTON_IMAGE = pygame.image.load('../img/button_fold.png')
+PASS_BUTTON_IMAGE = pygame.image.load('../img/button_pass.png')
+
 
 class PokerClient:
     """Client Thread that takes care of the client GUI and input"""
     def __init__(self, server_host, server_port):
+        self.show_options = True
         self.game_started = False
         self.run = True
         self.tables = []
@@ -48,6 +53,7 @@ class PokerClient:
         self.server_port = server_port
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+        self.current_bid = 0
 
     def draw_text(self, text, font, text_col, x, y):
         """Draw text to screen"""
@@ -91,7 +97,7 @@ class PokerClient:
         username = ""
         password = ""
         active_input = 'username'
-        self.screen.fill((1, 50, 32))
+        self.screen.fill(BACKGROUND_COLOR)
         login_button = Button(REGISTER_BUTTON_IMG, 250, 600, 268, 66)
         back_button = Button(GO_BACK_BUTTON_IMG, 250, 300, 268, 66)
         invalid_message = False
@@ -109,7 +115,6 @@ class PokerClient:
                     if login_button.check_if_clicked(pygame.mouse.get_pos()):
                         print(f"Registering with {username} and {password}")
                         if self.register(username, password):
-                            # registered corectly
                             self.lobby_menu()
                             pass
                         else:
@@ -132,7 +137,7 @@ class PokerClient:
                         else:
                             password += event.unicode
 
-            self.screen.fill((1, 50, 32))
+            self.screen.fill(BACKGROUND_COLOR)
 
             self.draw_text("Register", FONT, TEXT_COLOUR, 450, 150)
 
@@ -168,7 +173,7 @@ class PokerClient:
         username = ""
         password = ""
         active_input = 'username'
-        self.screen.fill((1, 50, 32))
+        self.screen.fill(BACKGROUND_COLOR)
         login_button = Button(LOGIN_BUTTON_IMG, 250, 600, 268, 66)
         back_button = Button(GO_BACK_BUTTON_IMG, 250, 300, 268, 66)
         invalid_message = False
@@ -208,7 +213,7 @@ class PokerClient:
                         else:
                             password += event.unicode
 
-            self.screen.fill((1, 50, 32))
+            self.screen.fill(BACKGROUND_COLOR)
 
             self.draw_text("Log-in page", FONT, TEXT_COLOUR, 450, 150)
             if invalid_message:
@@ -273,7 +278,7 @@ class PokerClient:
                         # Pick clicked lobby
                         clickedY = mouse_cords[1] - 250
                         index = clickedY // 35
-                        if index < len(self.tables):
+                        if index + current_position < len(self.tables):
                             self.join_table(current_position + index)
                             # print(f"Clicked table index is {current_position + index}")
 
@@ -300,17 +305,26 @@ class PokerClient:
         return pickle.loads(serialized_message)
 
     def play_game(self):
-        self.screen.fill((1, 50, 32))
+        self.screen.fill(BACKGROUND_COLOR)
         time.sleep(1)
 
         all_cards_img = CardDeck.cards_img
         first_card = self.current_table.player_cards[self.username][0]
         second_card = self.current_table.player_cards[self.username][1]
 
+        bid_button = Button(BID_BUTTON_IMAGE, 100, 530, 130, 67)
+        pass_button = Button(PASS_BUTTON_IMAGE, 330, 530, 145, 67)
+        fold_button = Button(FOLD_BUTTON_IMAGE, 100, 630, 145, 67)
+
         while True:
-            self.screen.fill((1, 50, 32))
+            self.screen.fill(BACKGROUND_COLOR)
             self.screen.blit(all_cards_img[first_card], (500, 500))
             self.screen.blit(all_cards_img[second_card], (570, 500))
+
+            if self.show_options:
+                self.screen.blit(bid_button.image, (bid_button.x, bid_button.y))
+                self.screen.blit(pass_button.image, (pass_button.x, pass_button.y))
+                self.screen.blit(fold_button.image, (fold_button.x, fold_button.y))
 
             for i in range(self.current_table.cards_shown, 5):
                 self.screen.blit(CARD_BACK_IMAGE, (250+100*i, 250))
@@ -326,13 +340,23 @@ class PokerClient:
                 self.screen.blit(CARD_BACK_IMAGE, (850, 350))
                 self.screen.blit(CARD_BACK_IMAGE, (920, 350))
 
-
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.send_message({"action": MessageType.Quit, 'username': self.username})
                     self.close_connection()
                     pygame.quit()
                     sys.exit()
+                if event.type == pygame.MOUSEBUTTONDOWN and self.show_options:
+                    mouse_pos = pygame.mouse.get_pos()
+                    if bid_button.check_if_clicked(mouse_pos):
+                        self.send_message({"action": MessageType.Bid})
+                        # self.show_options = False
+                    if pass_button.check_if_clicked(mouse_pos):
+                        self.send_message({"action": MessageType.Pass})
+                        # self.show_options = False
+                    if fold_button.check_if_clicked(mouse_pos):
+                        self.send_message({"action": MessageType.Fold})
+                        # self.show_options = False
 
             pygame.display.update()
 
@@ -395,7 +419,6 @@ class PokerClient:
         self.send_message({"action": MessageType.Join, 'table_name': self.tables[index].table_name, 'username': self.username})
         response = self.receive_message()
         if response['action'] == MessageType.Join and response['status'] == 'successful':
-            print(f"Joined table")
             self.table_name = self.tables[index].table_name
             listening_thread = threading.Thread(target=self.listen_for_broadcasts)
             listening_thread.start()
@@ -433,7 +456,7 @@ class PokerClient:
                         print("Trying to start table")
                         self.refresh_table()
                         self.send_message({'action': MessageType.StartTable, 'owner_name': self.username})
-                        # time.sleep(0.5)
+                        threading.Thread(target=self.receive_message)
                         self.play_game()
 
             for i in range(0, len(self.current_table.players)):
@@ -456,19 +479,20 @@ class PokerClient:
         time.sleep(0.5)       # So it doesn't get the response of the wait_for_table_to_start function
         while True:
             response = self.receive_message()
+            print(response)
             match response['action']:
                 case MessageType.RefreshTable:
                     self.current_table = response['table']
                 case MessageType.StartTable:
                     self.run = False
                     self.game_started = True
-
                 case MessageType.YourTurn:
-                    # Add stuff here
-                    pass
-
+                    self.show_options = True
+                    self.current_bid = response['current_bid']
                 case MessageType.DeleteTable:
                     self.run = False
+                case MessageType.Stop:
+                    self.send_message({'action': MessageType.Stop})
                 case MessageType.Quit:
                     self.close_connection()
                     pygame.quit()
@@ -518,17 +542,14 @@ class Button:
 
 
 if __name__ == "__main__":
-    # Set your server's host and port
     SERVER_HOST = "127.0.0.1"
     SERVER_PORT = 5555
 
-    # Create a PokerClient instance
     poker_client = PokerClient(SERVER_HOST, SERVER_PORT)
 
     try:
         poker_client.connect_to_server()
 
-        # Implement the game loop or user interface here
         poker_client.menu()
 
     except KeyboardInterrupt:

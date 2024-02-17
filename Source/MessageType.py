@@ -4,6 +4,7 @@ from enum import Enum
 class MessageType(Enum):
     """Message types for easier communication between server and clients"""
 
+    Stop = 0
     Login = 1,
     Register = 2,
     Bid = 3,
@@ -18,3 +19,5 @@ class MessageType(Enum):
     DeleteTable = 12,
     YourTurn = 13,
     TableForOwner = 14,
+    Pass = 15,
+    Fold = 17
