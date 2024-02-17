@@ -73,6 +73,7 @@ class PokerServer:
                         for table in self.waiting_tables:
                             if table.table_name == message['table_name']:
                                 table.players.append(message['username'])
+                                table.draw_cards()
                                 client_socket.send(pickle.dumps({"action": MessageType.Join, "status": "successful"}))
                                 break
                         pass
@@ -106,6 +107,10 @@ class PokerServer:
 
                     case MessageType.DeleteTable:
                         pass
+                    case MessageType.TableForOwner:
+                        for table in self.waiting_tables:
+                            if table.table_name == message['table_name']:
+                                client_socket.send(pickle.dumps({"table": table}))
 
                     case _:
                         pass
@@ -144,10 +149,16 @@ class PokerServer:
             if table.table_name == table_name:
                 client_socket.send(pickle.dumps({"action": MessageType.RefreshTableForOne, 'table': table}))
 
-    def start_poker_game(self, poker_table, players):
-        for player in players:
-            players[player].send(pickle.dumps({'action': MessageType.StartTable}))
-            print(f'sent start message to player {player}')
+    def start_poker_game(self, poker_table, player_sockets):
+        for player in player_sockets:
+            player_sockets[player].send(pickle.dumps({'action': MessageType.StartTable}))
+            # print(f'sent start message to player {player}')
+            player_sockets[player].send(pickle.dumps({'action': MessageType.RefreshTable, 'table': poker_table}))
+
+        passed = []
+        current_player = 0
+        while len(passed) != len(player_sockets):
+            pass
 
     def broadcast_to_table(self, table, action, message):
         for player_name in table.players:

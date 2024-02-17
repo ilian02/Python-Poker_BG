@@ -11,8 +11,10 @@ class MessageType(Enum):
     Leave = 5,
     Create = 6,
     Quit = 7,
-    GetLobbies = 8
-    RefreshTable = 9
-    StartTable = 10
-    RefreshTableForOne = 11
-    DeleteTable = 12
+    GetLobbies = 8,
+    RefreshTable = 9,
+    StartTable = 10,
+    RefreshTableForOne = 11,
+    DeleteTable = 12,
+    YourTurn = 13,
+    TableForOwner = 14,

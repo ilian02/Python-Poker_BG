@@ -17,9 +17,10 @@ class PokerTable:
 
     def draw_cards(self):
 
+        self.deck = list(CardDeck.cards_img.keys())
         self.table_cards = random.sample(self.deck, 5)
-        self.deck = [card for card in self.table_cards if card not in self.table_cards]
+        self.deck = [card for card in self.deck if card not in self.table_cards]
 
         for player in self.players:
             self.player_cards[player] = random.sample(self.deck, 2)
-            self.deck = [card for card in self.player_cards[player] if card not in self.table_cards]
+            self.deck = [card for card in self.deck if card not in self.player_cards[player]]

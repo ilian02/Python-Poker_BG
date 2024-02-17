@@ -6,6 +6,7 @@ import time
 
 import pygame
 
+from Source.CardDeck import CardDeck
 from Source.MessageType import MessageType
 from Source.PokerTable import PokerTable
 
@@ -300,8 +301,17 @@ class PokerClient:
 
     def play_game(self):
         self.screen.fill((1, 50, 32))
+        time.sleep(1)
+
+        all_cards_img = CardDeck.cards_img
+        first_card = self.current_table.player_cards[self.username][0]
+        second_card = self.current_table.player_cards[self.username][1]
 
         while True:
+            self.screen.fill((1, 50, 32))
+            self.screen.blit(all_cards_img[first_card], (500, 500))
+            self.screen.blit(all_cards_img[second_card], (570, 500))
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.send_message({"action": MessageType.Quit, 'username': self.username})
@@ -406,7 +416,9 @@ class PokerClient:
                         self.refresh_table()
                     if start_button.check_if_clicked(mouse_cords):
                         print("Trying to start table")
+                        self.refresh_table()
                         self.send_message({'action': MessageType.StartTable, 'owner_name': self.username})
+                        # time.sleep(0.5)
                         self.play_game()
 
             for i in range(0, len(self.current_table.players)):
@@ -427,7 +439,6 @@ class PokerClient:
         """Listen for updates for the table the client has joined"""
 
         time.sleep(0.5)       # So it doesn't get the response of the wait_for_table_to_start function
-
         while True:
             response = self.receive_message()
             match response['action']:
@@ -436,6 +447,11 @@ class PokerClient:
                 case MessageType.StartTable:
                     self.run = False
                     self.game_started = True
+
+                case MessageType.YourTurn:
+                    # Add stuff here
+                    pass
+
                 case MessageType.DeleteTable:
                     self.run = False
                 case MessageType.Quit:
