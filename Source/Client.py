@@ -10,7 +10,7 @@ from Source.MessageType import MessageType
 from Source.PokerTable import PokerTable
 
 SCREEN_WIDTH = 1300
-SCREEN_HEIGHT = 900
+SCREEN_HEIGHT = 700
 
 pygame.init()
 pygame.display.set_caption("Poker with friends")
@@ -29,11 +29,13 @@ REGISTER_BUTTON_IMG = pygame.image.load('../img/button_register.png')
 GO_BACK_BUTTON_IMG = pygame.image.load('../img/button_go-back.png')
 CREATE_NEW_TABLE_IMG = pygame.image.load('../img/button_create-new-table.png')
 REFRESH_TABLES_IMG = pygame.image.load('../img/button_refresh-tables.png')
+START_GAME_IMG = pygame.image.load('../img/button_start-game.png')
 
 
 class PokerClient:
     """Client Thread that takes care of the client GUI and input"""
     def __init__(self, server_host, server_port):
+        self.run = True
         self.tables = []
         self.logged_in = False
         self.table_name = None
@@ -237,8 +239,8 @@ class PokerClient:
         """Loads created tables and create new table button"""
         self.load_lobbies()
 
-        create_table_button = Button(CREATE_NEW_TABLE_IMG, 650, 800, 391, 66)
-        refresh_button = Button(REFRESH_TABLES_IMG, 650, 730, 391, 66)
+        create_table_button = Button(CREATE_NEW_TABLE_IMG, 650, 630, 391, 66)
+        refresh_button = Button(REFRESH_TABLES_IMG, 650, 550, 391, 66)
         current_position = 0
 
         run = True
@@ -301,8 +303,7 @@ class PokerClient:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.send_message({"action": MessageType.Quit, 'username': self.username})
-                    pygame.quit()
-                    sys.exit()
+                    self.run = False
             pygame.display.update()
 
     def login(self, username, password):
@@ -377,8 +378,8 @@ class PokerClient:
     def host_table(self):
         """GUI for waiting table for the host"""
 
-        refresh_button = Button(REFRESH_TABLES_IMG, 650, 730, 391, 66)
-        start_button = Button(REFRESH_TABLES_IMG, 650, 730, 391, 66)
+        refresh_button = Button(REFRESH_TABLES_IMG, 650, 500, 391, 66)
+        start_button = Button(START_GAME_IMG, 650, 600, 391, 66)
 
         run = True
         while run:
@@ -389,6 +390,8 @@ class PokerClient:
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
+                    self.send_message({'action': MessageType.Quit, 'username': self.username})
+                    # self.send_message({'action': MessageType.DeleteTable, 'username': self.username})
                     pygame.quit()
                     sys.exit()
                 elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
@@ -416,19 +419,19 @@ class PokerClient:
     def listen_for_broadcasts(self):
         """Listen for updates for the table the client has joined"""
 
-        time.sleep(1)       # So it doesn't get the response of the wait_for_table_to_start function
-        response = self.receive_message()
+        time.sleep(0.5)       # So it doesn't get the response of the wait_for_table_to_start function
 
         while True:
+            response = self.receive_message()
             match response['action']:
                 case MessageType.RefreshTable:
                     self.current_table = response['table']
                 case MessageType.StartTable:
                     # Define start of game
                     pass
-                case MessageType.Quit:
-                    # Define behaviour if owner quits
-                    pass
+                case MessageType.DeleteTable:
+                    self.run = False
+                    break
 
     def wait_for_table_to_start(self):
         """GUI for waiting for the table to start and updating connected users to table"""
@@ -436,8 +439,7 @@ class PokerClient:
         self.send_message({'action': MessageType.RefreshTableForOne, 'table_name': self.table_name})
         response = self.receive_message()
         self.current_table = response['table']
-        run = True
-        while run:
+        while self.run:
             self.screen.fill(BACKGROUND_COLOR)  # Temporary background
             self.draw_text("Your table", FONT, TEXT_COLOUR, 500, 150)
 
@@ -451,6 +453,11 @@ class PokerClient:
                                250 + i * 35)
 
             pygame.display.update()
+
+        self.close_connection()
+
+        pygame.quit()
+        sys.exit()
 
 
 class Button:

@@ -15,3 +15,4 @@ class MessageType(Enum):
     RefreshTable = 9
     StartTable = 10
     RefreshTableForOne = 11
+    DeleteTable = 12

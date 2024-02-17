@@ -73,19 +73,27 @@ class PokerServer:
                                 client_socket.send(pickle.dumps({"action": MessageType.Join, "status": "successful"}))
                                 break
                         pass
+
                     case MessageType.Create:
                         poker_table = PokerTable(message['username'])
                         poker_table.players.append(message['username'])
                         self.waiting_tables.append(poker_table)
                         client_socket.send(pickle.dumps({"action": MessageType.Create, "status": "successful"}))
                         print("Created new table")
+
                     case MessageType.RefreshTable:
                         self.broadcast_table_information(message['username'])
+
                     case MessageType.Quit:
                         self.delete_table_if_owner_quits(message['username'])
                         break
+
                     case MessageType.RefreshTableForOne:
                         self.send_table_information(message['table_name'], client_socket)
+
+                    case MessageType.DeleteTable:
+                        pass
+
                     case _:
                         pass
 
@@ -94,11 +102,17 @@ class PokerServer:
         finally:
             client_socket.close()
 
-    def delete_table_if_owner_quits(self, username):
+    def delete_table_if_owner_quits(self, owner):
         """Deletes a table from the waiting table list if the owner quits"""
-        table_name = username + "'s table"
+        table_name = owner + "'s table"
         for table in self.waiting_tables:
             if table.table_name == table_name:
+
+                for player_name in table.players:
+                    if player_name != owner:
+                        player_socket = self.accountHandler.connected_users[player_name]
+                        player_socket.send(pickle.dumps({'action': MessageType.DeleteTable}))
+
                 self.waiting_tables.remove(table)
 
     def broadcast_table_information(self, owner_name):
