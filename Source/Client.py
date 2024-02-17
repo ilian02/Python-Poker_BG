@@ -32,6 +32,7 @@ REFRESH_TABLES_IMG = pygame.image.load('../img/button_refresh-tables.png')
 
 
 class PokerClient:
+    """Client Thread that takes care of the client GUI and input"""
     def __init__(self, server_host, server_port):
         self.tables = []
         self.logged_in = False
@@ -45,10 +46,14 @@ class PokerClient:
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
     def draw_text(self, text, font, text_col, x, y):
+        """Draw text to screen"""
+
         img = font.render(text, True, text_col)
         self.screen.blit(img, (x, y))
 
     def menu(self):
+        """GUI for the main menu for login and register buttons"""
+
         # self.screen.blit(BACKGROUND_IMG, [0, 0])   # Background image
         self.screen.fill(BACKGROUND_COLOR)  # Temporary background
         self.draw_text("Poker with friends", FONT, TEXT_COLOUR, 450, 150)
@@ -77,6 +82,8 @@ class PokerClient:
             pygame.display.update()
 
     def register_page(self):
+        """Register page GUI which lets user input username and password and sends register request to server"""
+
         username = ""
         password = ""
         active_input = 'username'
@@ -153,6 +160,7 @@ class PokerClient:
             pygame.display.update()
 
     def login_page(self):
+        """Login page GUI which lets user input username and password and sends login request to server"""
         username = ""
         password = ""
         active_input = 'username'
@@ -226,6 +234,7 @@ class PokerClient:
             pygame.display.update()
 
     def lobby_menu(self):
+        """Loads created tables and create new table button"""
         self.load_lobbies()
 
         create_table_button = Button(CREATE_NEW_TABLE_IMG, 650, 800, 391, 66)
@@ -297,6 +306,7 @@ class PokerClient:
             pygame.display.update()
 
     def login(self, username, password):
+        """Sends login request to server"""
         self.send_message({"action": MessageType.Login, "username": username, "password": password})
 
         response = self.receive_message()
@@ -310,6 +320,7 @@ class PokerClient:
             return False
 
     def register(self, username, password):
+        """Sends register request to server"""
         self.send_message({"action": MessageType.Register, "username": username, "password": password})
 
         response = self.receive_message()
@@ -334,6 +345,7 @@ class PokerClient:
         self.tables = response['lobbies']
 
     def create_table(self):
+        """Sends create table request to server and makes the user join it"""
         # send message to server to create table and add user to it
         self.send_message({"action": MessageType.Create, 'username': self.username})
         response = self.receive_message()
@@ -348,6 +360,7 @@ class PokerClient:
             return False
 
     def join_table(self, index):
+        """Joins the table picked from the scrolling menu based on the index"""
         self.send_message({"action": MessageType.Join, 'table_name': self.tables[index].table_name, 'username': self.username})
         response = self.receive_message()
         if response['action'] == MessageType.Join and response['status'] == 'successful':
@@ -362,6 +375,7 @@ class PokerClient:
             return False
 
     def host_table(self):
+        """GUI for waiting table for the host"""
 
         refresh_button = Button(REFRESH_TABLES_IMG, 650, 730, 391, 66)
         start_button = Button(REFRESH_TABLES_IMG, 650, 730, 391, 66)
@@ -392,6 +406,7 @@ class PokerClient:
             pygame.display.update()
 
     def refresh_table(self):
+        """Request updated information for the table"""
         self.send_message({'action': MessageType.RefreshTable, 'username': self.username})
         response = self.receive_message()
         if response['action'] == MessageType.RefreshTable:
@@ -399,7 +414,9 @@ class PokerClient:
             self.current_table = response['table']
 
     def listen_for_broadcasts(self):
-        time.sleep(1)
+        """Listen for updates for the table the client has joined"""
+
+        time.sleep(1)       # So it doesn't get the response of the wait_for_table_to_start function
         response = self.receive_message()
 
         while True:
@@ -414,6 +431,8 @@ class PokerClient:
                     pass
 
     def wait_for_table_to_start(self):
+        """GUI for waiting for the table to start and updating connected users to table"""
+
         self.send_message({'action': MessageType.RefreshTableForOne, 'table_name': self.table_name})
         response = self.receive_message()
         self.current_table = response['table']
@@ -435,6 +454,7 @@ class PokerClient:
 
 
 class Button:
+    """Button class with image and coords"""
     def __init__(self, image, x, y, width, height):
         self.image = image
         self.x = x

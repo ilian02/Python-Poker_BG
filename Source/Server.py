@@ -12,6 +12,7 @@ FINISHED_GAMES = 'finished_games.txt'
 
 
 class PokerServer:
+    """Server that listens for connections and handles clients"""
     def __init__(self, host, port):
         self.host = host
         self.port = port
@@ -22,6 +23,7 @@ class PokerServer:
         # self.previous_games = self.load_previous_games()
 
     def start(self):
+        """Creates server socket and listens for clients"""
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server_socket.bind((self.host, self.port))
         server_socket.listen()
@@ -41,7 +43,7 @@ class PokerServer:
             server_socket.close()
 
     def handle_client(self, client_socket):
-        # Handle a new client connection
+        """Listens for messages from the client socket and answers them"""
 
         try:
             # Receive client_name from the client
@@ -80,7 +82,7 @@ class PokerServer:
                     case MessageType.RefreshTable:
                         self.broadcast_table_information(message['username'])
                     case MessageType.Quit:
-                        self.delete_table_if_owner(message['username'])
+                        self.delete_table_if_owner_quits(message['username'])
                         break
                     case MessageType.RefreshTableForOne:
                         self.send_table_information(message['table_name'], client_socket)
@@ -92,13 +94,15 @@ class PokerServer:
         finally:
             client_socket.close()
 
-    def delete_table_if_owner(self, username):
+    def delete_table_if_owner_quits(self, username):
+        """Deletes a table from the waiting table list if the owner quits"""
         table_name = username + "'s table"
         for table in self.waiting_tables:
             if table.table_name == table_name:
                 self.waiting_tables.remove(table)
 
     def broadcast_table_information(self, owner_name):
+        """Sends table information to everyone on the table"""
         table_name = owner_name + "'s table"
         for table in self.waiting_tables:
             if table.table_name == table_name:
@@ -108,6 +112,7 @@ class PokerServer:
                     player_socket.send(pickle.dumps({'action': MessageType.RefreshTable, 'table': table}))
 
     def send_table_information(self, table_name, client_socket):
+        """Sends table information only to the user that requested it"""
         for table in self.waiting_tables:
             if table.table_name == table_name:
                 client_socket.send(pickle.dumps({"action": MessageType.RefreshTableForOne, 'table': table}))

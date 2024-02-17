@@ -2,6 +2,7 @@ import pygame
 
 
 class CardDeck:
+    """Loads images of cards and creates a playable card deck for other classes"""
     def __init__(self):
         self.cards_img = {}
 
