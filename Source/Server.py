@@ -16,10 +16,8 @@ class PokerServer:
         self.host = host
         self.port = port
         self.playing_tables = []
-        self.waiting_tables = []  # Dictionary to store PokerTable instances
-        self.waiting_tables.append(PokerTable('temp1'))
-        # self.accounts = self.load_players()
-        # self.connected_users = {}
+        self.waiting_tables = []  # Array to store PokerTable instances
+        # self.waiting_tables.append(PokerTable('temp1'))
         self.accountHandler = AccountHandler(ACCOUNTS_FILE)
         # self.previous_games = self.load_previous_games()
 
@@ -72,7 +70,6 @@ class PokerServer:
                                 table.players.append(message['username'])
                                 client_socket.send(pickle.dumps({"action": MessageType.Join, "status": "successful"}))
                                 break
-
                         pass
                     case MessageType.Create:
                         poker_table = PokerTable(message['username'])
@@ -80,9 +77,13 @@ class PokerServer:
                         self.waiting_tables.append(poker_table)
                         client_socket.send(pickle.dumps({"action": MessageType.Create, "status": "successful"}))
                         print("Created new table")
+                    case MessageType.RefreshTable:
+                        self.broadcast_table_information(message['username'])
                     case MessageType.Quit:
                         self.delete_table_if_owner(message['username'])
                         break
+                    case MessageType.RefreshTableForOne:
+                        self.send_table_information(message['table_name'], client_socket)
                     case _:
                         pass
 
@@ -96,6 +97,20 @@ class PokerServer:
         for table in self.waiting_tables:
             if table.table_name == table_name:
                 self.waiting_tables.remove(table)
+
+    def broadcast_table_information(self, owner_name):
+        table_name = owner_name + "'s table"
+        for table in self.waiting_tables:
+            if table.table_name == table_name:
+                for player_name in table.players:
+                    player_socket = self.accountHandler.connected_users[player_name]
+                    print(player_socket)
+                    player_socket.send(pickle.dumps({'action': MessageType.RefreshTable, 'table': table}))
+
+    def send_table_information(self, table_name, client_socket):
+        for table in self.waiting_tables:
+            if table.table_name == table_name:
+                client_socket.send(pickle.dumps({"action": MessageType.RefreshTableForOne, 'table': table}))
 
 
 if __name__ == "__main__":

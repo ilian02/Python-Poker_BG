@@ -10,3 +10,6 @@ class MessageType(Enum):
     Create = 6,
     Quit = 7,
     GetLobbies = 8
+    RefreshTable = 9
+    StartTable = 10
+    RefreshTableForOne = 11

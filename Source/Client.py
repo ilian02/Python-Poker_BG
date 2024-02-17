@@ -1,10 +1,13 @@
 import socket
 import pickle  # For serializing Python objects for network communication
 import sys
+import threading
+import time
 
 import pygame
 
 from Source.MessageType import MessageType
+from Source.PokerTable import PokerTable
 
 SCREEN_WIDTH = 1300
 SCREEN_HEIGHT = 900
@@ -35,6 +38,7 @@ class PokerClient:
         self.table_name = None
         self.username = None
         self.password = None
+        self.current_table = None
         self.server_host = server_host
         self.server_port = server_port
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -335,8 +339,9 @@ class PokerClient:
         response = self.receive_message()
         if response['action'] == MessageType.Create and response['status'] == 'successful':
             print(f"Created and joined table")
-            self.play_game()
-            # Do something else
+            self.current_table = PokerTable(self.username)
+            self.current_table.players.append(self.username)
+            self.host_table()
             return True
         else:
             print("Creating table was unsuccessful.")
@@ -347,13 +352,86 @@ class PokerClient:
         response = self.receive_message()
         if response['action'] == MessageType.Join and response['status'] == 'successful':
             print(f"Joined table")
-            self.play_game()
-            # Do something else
-
+            self.table_name = self.tables[index].table_name
+            listening_thread = threading.Thread(target=self.listen_for_broadcasts)
+            listening_thread.start()
+            self.wait_for_table_to_start()
             return True
         else:
-            print("Login was unsuccessful.")
+            print("Joining table was unsuccessful.")
             return False
+
+    def host_table(self):
+
+        refresh_button = Button(REFRESH_TABLES_IMG, 650, 730, 391, 66)
+        start_button = Button(REFRESH_TABLES_IMG, 650, 730, 391, 66)
+
+        run = True
+        while run:
+            self.screen.fill(BACKGROUND_COLOR)  # Temporary background
+            self.draw_text("Your table", FONT, TEXT_COLOUR, 500, 150)
+            self.screen.blit(start_button.image, (start_button.x, start_button.y))
+            self.screen.blit(refresh_button.image, (refresh_button.x, refresh_button.y))
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    mouse_cords = pygame.mouse.get_pos()
+                    if refresh_button.check_if_clicked(mouse_cords):
+                        print("Trying to refresh table")
+                        self.refresh_table()
+                    if start_button.check_if_clicked(mouse_cords):
+                        print("Trying to start table")
+
+            for i in range(0, len(self.current_table.players)):
+                self.draw_text(f"{self.current_table.players[i]}", FONT_LOBBIES, (255, 255, 255), 50,
+                               250 + i * 35)
+
+            pygame.display.update()
+
+    def refresh_table(self):
+        self.send_message({'action': MessageType.RefreshTable, 'username': self.username})
+        response = self.receive_message()
+        if response['action'] == MessageType.RefreshTable:
+            print(f"Table refreshed")
+            self.current_table = response['table']
+
+    def listen_for_broadcasts(self):
+        time.sleep(1)
+        response = self.receive_message()
+
+        while True:
+            match response['action']:
+                case MessageType.RefreshTable:
+                    self.current_table = response['table']
+                case MessageType.StartTable:
+                    # Define start of game
+                    pass
+                case MessageType.Quit:
+                    # Define behaviour if owner quits
+                    pass
+
+    def wait_for_table_to_start(self):
+        self.send_message({'action': MessageType.RefreshTableForOne, 'table_name': self.table_name})
+        response = self.receive_message()
+        self.current_table = response['table']
+        run = True
+        while run:
+            self.screen.fill(BACKGROUND_COLOR)  # Temporary background
+            self.draw_text("Your table", FONT, TEXT_COLOUR, 500, 150)
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+
+            for i in range(0, len(self.current_table.players)):
+                self.draw_text(f"{self.current_table.players[i]}", FONT_LOBBIES, (255, 255, 255), 50,
+                               250 + i * 35)
+
+            pygame.display.update()
 
 
 class Button:
